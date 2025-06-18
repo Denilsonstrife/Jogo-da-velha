@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Login + Jogo da Velha</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #74ebd5, #9face6);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container, .welcome-container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 320px;
+      text-align: center;
+      position: relative;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .message {
+      margin-top: 10px;
+      color: #e60000;
+      font-weight: bold;
+    }
+
+    #welcomeScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      background-color: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      position: relative;
+      width: 320px;
+    }
+
+    .big-text {
+      font-size: 36px;
+      color: #333;
+      margin-bottom: 30px;
+      z-index: 1;
+    }
+
+    .game-title {
+      font-size: 20px;
+      color: #333;
+      margin-top: 30px;
+      margin-bottom: 20px;
+      z-index: 1;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-template-rows: repeat(3, 60px);
+      gap: 5px;
+      background-color: transparent;
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 1;
+    }
+
+    .cell {
+      width: 60px;
+      height: 60px;
+      background-color: rgba(255, 255, 255, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background-color 0.3s;
+    }
+
+    .cell:hover {
+      background-color: rgba(255, 255, 255, 1);
+    }
+
+    .status {
+      margin-top: 15px;
+      font-weight: bold;
+      color: #333;
+      z-index: 1;
+    }
+
+    /* Imagem de fundo após login */
+    .bg-img-welcome {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      border-radius: 12px;
+      opacity: 0.4; /* opcional: escurece um pouco para melhor leitura */
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Tela de Login -->
+  <div class="container" id="loginScreen">
+    <h1>Login</h1>
+    <input type="text" id="username" placeholder="Nome de usuário">
+    <input type="password" id="password" placeholder="Senha">
+    <button onclick="login()">Entrar</button>
+    <div class="message" id="message"></div>
+  </div>
+
+  <!-- Tela Bem-Vindo + Jogo -->
+  <div id="welcomeScreen" class="welcome-container">
+    <!-- IMAGEM DE FUNDO -->
+    <img src="Xadrezz.webp" alt="Imagem de fundo com tema de jogos" class="bg-img-welcome">
+
+    <div class="big-text">Bem-Vindo</div>
+    <button onclick="voltar()">Voltar</button>
+
+    <div class="game-title">Gostaria de jogar?</div>
+
+    <div class="board" id="board">
+      <div class="cell" onclick="makeMove(0)"></div>
+      <div class="cell" onclick="makeMove(1)"></div>
+      <div class="cell" onclick="makeMove(2)"></div>
+      <div class="cell" onclick="makeMove(3)"></div>
+      <div class="cell" onclick="makeMove(4)"></div>
+      <div class="cell" onclick="makeMove(5)"></div>
+      <div class="cell" onclick="makeMove(6)"></div>
+      <div class="cell" onclick="makeMove(7)"></div>
+      <div class="cell" onclick="makeMove(8)"></div>
+    </div>
+    <div class="status" id="statusText"></div>
+  </div>
+
+  <!-- Áudios -->
+  <audio id="somVitoria" src="Vitória.mp3"></audio>
+  <audio id="somEmpate" src="empate.mp3"></audio>
+
+  <script>
+    function login() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const message = document.getElementById("message");
+
+      if (username === "" || password === "") {
+        message.textContent = "Preencha todos os campos.";
+      } else {
+        message.textContent = "";
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("welcomeScreen").style.display = "flex";
+        resetGame();
+      }
+    }
+
+    function voltar() {
+      document.getElementById("welcomeScreen").style.display = "none";
+      document.getElementById("loginScreen").style.display = "block";
+      document.getElementById("username").value = "";
+      document.getElementById("password").value = "";
+    }
+
+    // Jogo da Velha
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let gameActive = true;
+
+    const statusText = document.getElementById("statusText");
+    const cells = document.getElementsByClassName("cell");
+
+    function makeMove(index) {
+      if (!gameActive || board[index] !== "") return;
+
+      board[index] = currentPlayer;
+      cells[index].textContent = currentPlayer;
+
+      if (checkWin()) {
+        statusText.textContent = `Jogador ${currentPlayer} venceu!`;
+        gameActive = false;
+
+        // Toca som de vitória
+        document.getElementById("somVitoria").play();
+
+        setTimeout(resetGame, 2000);
+        return;
+      }
+
+      if (board.every(cell => cell !== "")) {
+        statusText.textContent = "Empate!";
+        gameActive = false;
+
+        // Toca som de empate
+        document.getElementById("somEmpate").play();
+
+        setTimeout(resetGame, 2000);
+        return;
+      }
+
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      statusText.textContent = `Vez de ${currentPlayer}`;
+    }
+
+    function checkWin() {
+      const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+
+      return winPatterns.some(([a,b,c]) =>
+        board[a] && board[a] === board[b] && board[a] === board[c]
+      );
+    }
+
+    function resetGame() {
+      board = ["", "", "", "", "", "", "", "", ""];
+      currentPlayer = "X";
+      gameActive = true;
+      statusText.textContent = `Vez de ${currentPlayer}`;
+      for (let i = 0; i < 9; i++) {
+        cells[i].textContent = "";
+      }
+    }
+  </script>
+
+</body>
+</html>
